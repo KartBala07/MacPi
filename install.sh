@@ -114,7 +114,7 @@ PKGS=(
   xserver-xorg xinit x11-xserver-utils dbus-x11
   lightdm xfce4-session xfwm4 xfce4-settings xfce4-power-manager
   thunar thunar-volman tumbler gvfs
-  xfce4-terminal xdotool wmctrl unclutter libnotify-bin
+  xfce4-terminal xdotool xinput wmctrl unclutter libnotify-bin
   tint2 plank rofi feh
   network-manager-gnome pasystray blueman policykit-1-gnome
   fonts-inter fonts-noto-color-emoji
@@ -213,7 +213,8 @@ ok "launchers installed"
 if (( LIVEWALL )); then
   step "Installing live wallpapers"
   if compgen -G "$SRC/assets/livewall/*.mp4" >/dev/null; then
-    run sudo cp "$SRC"/assets/livewall/*.mp4 "$SRC"/assets/livewall/*.jpg "$SHARE/livewall/" 2>/dev/null
+    run sudo cp "$SRC"/assets/livewall/*.mp4 "$SHARE/livewall/"
+    run bash -c "sudo cp '$SRC'/assets/livewall/*.jpg '$SHARE/livewall/' 2>/dev/null || true"
     ok "$(ls -1 "$SRC"/assets/livewall/*.mp4 | wc -l) clips copied"
   else
     warn "no clips in assets/livewall — run tools/render_livewall.py first"
@@ -306,7 +307,7 @@ as_user tee "$XF_CONF/xfwm4.xml" >/dev/null <<EOF
     <property name="theme" type="string" value="$XFWM_THEME"/>
     <property name="title_font" type="string" value="Inter SemiBold 10"/>
     <property name="title_alignment" type="string" value="center"/>
-    <property name="button_layout" type="string" value="HMC|O"/>
+    <property name="button_layout" type="string" value="CHM|O"/>
     <property name="use_compositing" type="bool" value="true"/>
     <property name="show_frame_shadow" type="bool" value="true"/>
     <property name="show_popup_shadow" type="bool" value="true"/>

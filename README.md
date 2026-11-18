@@ -3,6 +3,8 @@
 A clean, macOS-flavoured desktop for Raspberry Pi — menubar, dock, Spotlight,
 frosted windows, and a smoothly looping nature live wallpaper on the desktop.
 
+![MacPi desktop](docs/preview.png)
+
 Runs on Raspberry Pi OS (Bookworm or newer), Pi 3 / 4 / 5 / Zero 2 W.
 One installer, no image to download:
 

@@ -33,6 +33,20 @@ def value_noise(h, w, cells, seed):
     return np.asarray(im, dtype=np.float32) / 255.0
 
 
+def stratus_noise(h, w, cx, cy, seed):
+    """Noise stretched horizontally — reads as cloud strata rather than blobs."""
+    r = np.random.default_rng(seed)
+    small = r.random((max(2, cy), max(3, cx))).astype(np.float32)
+    im = Image.fromarray((small * 255).astype(np.uint8), "L").resize((w, h), Image.BICUBIC)
+    a = np.asarray(im, dtype=np.float32) / 255.0
+    # second octave for wispy edges
+    r2 = np.random.default_rng(seed + 1)
+    s2 = r2.random((max(3, cy * 3), max(4, cx * 3))).astype(np.float32)
+    im2 = Image.fromarray((s2 * 255).astype(np.uint8), "L").resize((w, h), Image.BICUBIC)
+    b = np.asarray(im2, dtype=np.float32) / 255.0
+    return np.clip(a * 0.68 + b * 0.32, 0, 1)
+
+
 def horizontal_gradient(w, stops):
     """stops: [(pos0..1, (r,g,b)), ...] -> (1,w,3) float 0..1"""
     pos = np.array([s[0] for s in stops], dtype=np.float32)
@@ -283,9 +297,9 @@ class CloudSea:
             (0.60, (1.00, 0.86, 0.66)),
             (1.00, (0.55, 0.45, 0.42)),
         ])
-        self.n1 = value_noise(h, w, 9, seed)
-        self.n2 = value_noise(h, w, 21, seed + 1)
-        self.n3 = value_noise(h, w, 47, seed + 2)
+        self.n1 = stratus_noise(h, w, 26, 5, seed)
+        self.n2 = stratus_noise(h, w, 40, 7, seed + 11)
+        self.n3 = stratus_noise(h, w, 60, 9, seed + 23)
         self.ridge = AuroraLake(w, h, seed=3)._ridges()
         y = np.linspace(-1, 1, h, dtype=np.float32)[:, None]
         x = np.linspace(-1, 1, w, dtype=np.float32)[None, :]
@@ -296,25 +310,29 @@ class CloudSea:
         h, w = self.h, self.w
         img = np.repeat(self.sky, w, axis=1).copy()
 
-        # sun glow, breathing very slowly
+        # sun: small hard core + a soft halo, breathing very slowly
         y = np.arange(h, dtype=np.float32)[:, None]
         x = np.arange(w, dtype=np.float32)[None, :]
-        sunx, suny = self.w * 0.62, self.horizon * 0.92
+        sunx, suny = self.w * 0.63, self.horizon * 0.86
         d = np.sqrt(((x - sunx) / w) ** 2 + ((y - suny) / h) ** 2)
-        glow = np.exp(-(d ** 2) / 0.010) * (0.94 + 0.06 * np.sin(u))
-        img = img + glow[..., None] * np.array([0.95, 0.72, 0.42], dtype=np.float32)
+        breath = 0.96 + 0.04 * np.sin(u)
+        core = np.exp(-(d ** 2) / 0.00016) * breath
+        halo = np.exp(-(d ** 2) / 0.0075) * breath
+        img = (img + core[..., None] * np.array([1.00, 0.92, 0.74], dtype=np.float32)
+                   + halo[..., None] * np.array([0.62, 0.34, 0.16], dtype=np.float32))
 
         # three cloud strata drifting at different speeds (wrap-safe: roll by int)
         strata = [
-            (0.52, 0.075, 0.62, 1.0, (0.99, 0.86, 0.78), self.n1),
-            (0.63, 0.095, 0.78, 2.0, (0.86, 0.78, 0.80), self.n2),
-            (0.76, 0.130, 0.92, 3.0, (0.62, 0.56, 0.64), self.n3),
+            (0.50, 0.060, 0.55, 1.0, (1.00, 0.88, 0.80), self.n1),
+            (0.62, 0.075, 0.72, 2.0, (0.90, 0.80, 0.82), self.n2),
+            (0.76, 0.110, 0.88, 3.0, (0.66, 0.58, 0.66), self.n3),
         ]
         for cy, wd, dens, speed, col, noise in strata:
             shift = int(round(math.sin(u * speed) * 0.06 * w))
             n = np.roll(np.roll(noise, (shift // 3) % w, axis=1), int(round(math.sin(u * 0.7) * 0.02 * h)), axis=0)
             band = np.exp(-((y - cy * h) ** 2) / (2 * (wd * h) ** 2))
-            a = np.clip((n - (1.0 - dens) * 0.85) * 2.4, 0, 1) * band
+            edge = np.clip((n - (1.0 - dens) * 0.6) * 3.2, 0, 1)
+            a = (edge ** 1.5) * band
             img = img * (1 - a[..., None]) + np.array(col, dtype=np.float32) * a[..., None]
 
         # distant ridge line for depth
