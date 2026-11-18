@@ -177,7 +177,7 @@ class AuroraLake:
                      + 0.075 * h * np.sin(x / (w * 0.16) + u + ph)
                      + 0.030 * h * np.sin(x / (w * 0.44) - 2.0 * u + ph * 1.3)
                      + 0.012 * h * np.sin(x / (w * 1.10) + 3.0 * u + ph * 0.7))
-            width = wd * h * (1.0 + 0.45 * np.sin(x / (w * 0.24) + 1.5 * u + ph))
+            width = wd * h * (1.0 + 0.40 * np.sin(x / (w * 0.24) + 2.0 * u + ph))
 
             # three overlapping sheets -> folds with darker lanes between them
             for j, (off, sheet_gain, sheet_w) in enumerate(
@@ -311,7 +311,7 @@ class CloudSea:
             (0.76, 0.130, 0.92, 3.0, (0.62, 0.56, 0.64), self.n3),
         ]
         for cy, wd, dens, speed, col, noise in strata:
-            shift = int(round(math.sin(u * speed) * 0.06 * w)) + int(round(t * 0.05 * w * speed))
+            shift = int(round(math.sin(u * speed) * 0.06 * w))
             n = np.roll(np.roll(noise, (shift // 3) % w, axis=1), int(round(math.sin(u * 0.7) * 0.02 * h)), axis=0)
             band = np.exp(-((y - cy * h) ** 2) / (2 * (wd * h) ** 2))
             a = np.clip((n - (1.0 - dens) * 0.85) * 2.4, 0, 1) * band

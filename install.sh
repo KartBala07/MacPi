@@ -24,7 +24,6 @@ LIVEWALL=1
 SCALE=""
 OFFLINE=0
 DRY=0
-INSTALL_MEDIA=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -56,15 +55,15 @@ run()  { if (( DRY )); then printf '  %s[dry]%s %s\n' "$DIM" "$R" "$*"; else "$@
 # ---------------------------------------------------------------- context
 SRC="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_USER="${SUDO_USER:-${USER}}"
-[[ "$TARGET_USER" == "root" ]] && die "run this as your normal user (it calls sudo itself)"
+if [[ "$TARGET_USER" == "root" ]]; then
+  die "run this as your normal user (it calls sudo itself)"
+fi
 TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
 [[ -d "$TARGET_HOME" ]] || die "cannot resolve home for $TARGET_USER"
 PREFIX="/usr/local"
 SHARE="/usr/local/share/macpi"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-
-adopt() { [[ "$(id -un)" == "$TARGET_USER" ]] || [[ $DRY == 1 ]] || true; }
 
 as_user() {
   if [[ "$(id -un)" == "$TARGET_USER" ]]; then "$@"; else sudo -u "$TARGET_USER" -H "$@"; fi
@@ -97,7 +96,7 @@ case "$MODEL" in
   *"Raspberry Pi Zero 2"*) PI_GEN="zero2" ;;
   *"Raspberry Pi Zero"*)   PI_GEN="zero" ;;
 esac
-[[ -z "$PI_GEN" ]] && warn "unrecognised board — continuing with safe defaults"
+if [[ -z "$PI_GEN" ]]; then warn "unrecognised board — continuing with safe defaults"; fi
 if [[ "$PI_GEN" == "3" || "$PI_GEN" == "zero2" || "$PI_GEN" == "zero" ]]; then
   warn "$MODEL is a light board: live wallpaper will be capped to 720p and 24 fps"
 fi
@@ -122,7 +121,7 @@ PKGS=(
   git curl ca-certificates
 )
 (( OFFLINE )) || PKGS+=(sassc libglib2.0-dev-bin)
-(( LIVEWALL )) && PKGS+=(mpv build-essential libx11-dev libxext-dev libxrender-dev)
+if (( LIVEWALL )); then PKGS+=(mpv build-essential libx11-dev libxext-dev libxrender-dev); fi
 PKGS+=(ir-keytable)
 
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
@@ -145,7 +144,7 @@ else
   as_user mkdir -p "$GTK_DIR" "$ICON_DIR"
 
   clone() {  # clone <repo> <dir>
-    rm -rf "$TMP/$2"
+    rm -rf "${TMP:?}/$2"
     git clone --depth=1 --quiet "https://github.com/vinceliuice/$1.git" "$TMP/$2" \
       || { warn "could not clone $1 — skipping"; return 1; }
   }
@@ -174,7 +173,10 @@ else
   fi
 
   # pick whatever the builds actually produced
-  pick() { for c in "$@"; do [[ -e "$2/$c" ]] && { echo "$c"; return; }; done; }
+  pick() {  # pick <candidate...> <dir>
+    local dir="${*: -1}" c
+    for c in "${@:1:$#-1}"; do [[ -e "$dir/$c" ]] && { echo "$c"; return; }; done
+  }
   THEME_NAME="$(pick WhiteSur-Dark MacOS-Dark Adwaita "$GTK_DIR")"
   XFWM_THEME="$(pick WhiteSur-Dark MacOS-Dark Default "$GTK_DIR")"
   ICON_NAME="$(pick WhiteSur-dark WhiteSur WhiteSur-light Adwaita "$ICON_DIR")"

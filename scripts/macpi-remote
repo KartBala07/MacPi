@@ -16,7 +16,6 @@
 #
 set -u
 
-SHARE=${MACPI_SHARE:-/usr/local/share/macpi}
 IR_DEV=/dev/lirc0
 KEYTABLE=/etc/rc_keymaps/macpi-roku
 UNIT=/etc/systemd/system/macpi-ir.service
@@ -79,6 +78,7 @@ learn_ir() {
   say ""
 
   local out; out=$(mktemp)
+  # shellcheck disable=SC2024  # $out is a user-owned temp file, the redirect is ours
   sudo ir-keytable -s rc0 -p all -t >"$out" 2>&1 &
   local tid=$!
   trap 'kill '"$tid"' 2>/dev/null; rm -f "$out"' EXIT
