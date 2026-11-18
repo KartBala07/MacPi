@@ -1,0 +1,101 @@
+/* MacPi Spotlight — rofi theme */
+
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    icon-theme: "WhiteSur-dark";
+    font: "Inter 12";
+    drun-display-format: "{name}";
+    display-drun: "Applications";
+    display-run: "Run";
+    display-window: "Windows";
+    scroll-method: 0;
+    cycle: true;
+}
+
+* {
+    bg:     rgba(22, 24, 30, 0.90);
+    bg2:    rgba(255, 255, 255, 0.06);
+    fg:     #e9ecf3;
+    dim:    #9aa3b4;
+    accent: rgba(90, 160, 255, 0.55);
+    sel:    rgba(255, 255, 255, 0.13);
+    separators: rgba(255, 255, 255, 0.08);
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    location: north;
+    anchor: north;
+    width: 640px;
+    y-offset: 96px;
+    padding: 16px;
+    border-radius: 18px;
+    background-color: @bg;
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.11);
+}
+
+mainbox { spacing: 12px; children: [ inputbar, message, listview ]; }
+
+inputbar {
+    spacing: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background-color: @bg2;
+    children: [ prompt, entry ];
+}
+
+prompt { text-color: @dim; padding: 0 0 0 2px; }
+
+entry {
+    placeholder: "Search";
+    placeholder-color: @dim;
+    text-color: @fg;
+    cursor: text;
+}
+
+listview {
+    lines: 8;
+    columns: 1;
+    spacing: 2px;
+    scrollbar: false;
+    fixed-height: true;
+    fixed-width: false;
+    dynamic: false;
+}
+
+element {
+    padding: 9px 12px;
+    spacing: 12px;
+    border-radius: 10px;
+    background-color: transparent;
+}
+
+element-icon {
+    size: 24px;
+    padding: 0;
+    background-color: transparent;
+}
+
+element-text {
+    vertical-align: 0.5;
+    text-color: @fg;
+    background-color: transparent;
+}
+
+element selected {
+    background-color: @sel;
+    border: 0;
+}
+
+element-text selected { text-color: #ffffff; }
+
+element normal urgent { text-color: #ff8a80; }
+element selected urgent { text-color: #ffb0a8; }
+
+message { padding: 8px 6px; border-radius: 10px; background-color: @bg2; }
+textbox { text-color: @fg; }
+
+scrollbar { width: 4px; handle-width: 4px; border-radius: 2px; background-color: transparent; handle-color: rgba(255,255,255,0.22); }

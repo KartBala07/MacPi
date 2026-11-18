@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# macpi-settings — a tiny control centre that matches the rest of the desktop.
+set -u
+
+SHARE=${MACPI_SHARE:-/usr/local/share/macpi}
+WALL="$SHARE/livewall"
+
+pick() {  # pick <prompt> <items...>
+  local prompt="$1"; shift
+  printf '%s\n' "$@" | rofi -dmenu -theme macpi -p "$prompt" -i
+}
+
+notify() {
+  if command -v notify-send >/dev/null; then notify-send -a MacPi "$1" "${2:-}"; fi
+  printf '%s\n' "${1}${2:+ — $2}"
+}
+
+clips() {
+  local out=()
+  [[ -d "$WALL" ]] || return 0
+  for f in "$WALL"/*.mp4; do [[ -e "$f" ]] || continue; out+=("$(basename "$f" .mp4)"); done
+  printf '%s\n' "${out[@]}"
+}
+
+main() {
+  local choice
+  choice=$(pick "MacPi" \
+    "Wallpaper: $(macpi-wallpaper status 2>/dev/null | head -1)" \
+    "Change wallpaper" \
+    "Live wallpaper on/off" \
+    "Appearance" \
+    "Remote control" \
+    "Display scaling" \
+    "Lock screen" \
+    "About MacPi")
+  [[ -z "${choice:-}" ]] && exit 0
+
+  case "$choice" in
+    "Change wallpaper"*)
+      local c; c=$(pick "Wallpaper" $(clips) "static image")
+      [[ -z "${c:-}" ]] && exit 0
+      if [[ "$c" == "static image" ]]; then
+        macpi-wallpaper mode static
+      else
+        macpi-wallpaper set "$c"
+      fi
+      notify "Wallpaper" "$c"
+      ;;
+    "Live wallpaper on/off"*)
+      local st; st=$(macpi-wallpaper status | grep -q '^running' && echo on || echo off)
+      if [[ "$st" == "on" ]]; then macpi-wallpaper mode static; notify "Live wallpaper" "off"
+      else macpi-wallpaper mode live; notify "Live wallpaper" "on"; fi
+      ;;
+    "Appearance")
+      if command -v xfce4-appearance-settings >/dev/null; then
+        xfce4-appearance-settings &
+      else
+        notify "Appearance" "xfce4-appearance-settings not installed"
+      fi
+      ;;
+    "Remote control")
+      local r; r=$(pick "Remote" "Detect input hardware" "Learn an IR remote" "HDMI-CEC listener")
+      case "${r:-}" in
+        "Detect"*)  xfce4-terminal -e "macpi-remote detect; read -p 'Enter to close'" ;;
+        "Learn"*)   xfce4-terminal -e "macpi-remote learn-ir; read -p 'Enter to close'" ;;
+        "HDMI"*)    xfce4-terminal -e "macpi-remote cec" ;;
+      esac
+      ;;
+    "Display scaling")
+      local s; s=$(pick "UI scale" "1.0" "1.25" "1.5" "1.75" "2.0")
+      [[ -z "${s:-}" ]] && exit 0
+      local dpi; dpi=$(awk -v s="$s" 'BEGIN{printf "%d", 96*s}')
+      xfconf-query -c xsettings -p /Xft/DPI -n -t int -s "$dpi" 2>/dev/null \
+        || xfconf-query -c xsettings -p /Xft/DPI -s "$dpi"
+      notify "Scale" "$s (DPI $dpi)"
+      ;;
+    "Lock screen")  xflock4 ;;
+    "About MacPi")
+      rofi -e "MacPi 1.0.0
+macOS-flavoured desktop for Raspberry Pi
+menubar: tint2 · dock: plank · search: rofi · live wallpaper: xwinwrap+mpv" -theme macpi
+      ;;
+  esac
+}
+
+main "$@"

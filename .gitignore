@@ -1,0 +1,4 @@
+*.log
+__pycache__/
+.venv/
+assets/livewall/*.tmp

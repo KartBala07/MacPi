@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# macpi-active-app — print the focused window's application name.
+# Called once a second by the tint2 menubar (execp).
+set -u
+
+id=$(xdotool getactivewindow 2>/dev/null) || { echo ""; exit 0; }
+[[ -z "$id" ]] && { echo ""; exit 0; }
+
+name=""
+cls=$(xdotool getwindowclassname "$id" 2>/dev/null || true)
+pid=$(xdotool getwindowpid "$id" 2>/dev/null || true)
+
+if [[ -n "$pid" && -r "/proc/$pid/comm" ]]; then
+  name=$(cat "/proc/$pid/comm" 2>/dev/null || true)
+  # strip the chromium/firefox helper suffix
+  name="${name%% --*}"
+fi
+[[ -z "$name" ]] && name="$cls"
+case "$name" in
+  *x-terminal-emulator*|xfce4-terminal*|lxterminal*) name="Terminal" ;;
+  thunar|Thunar|org.gnome.Nautilus) name="Files" ;;
+  mpv) name="Video" ;;
+  rofi) name="" ;;
+esac
+[[ -z "$name" ]] && { echo ""; exit 0; }
+
+# Title-case it the way a menubar would
+printf '%s\n' "$name" | awk '{printf "%s%s\n", toupper(substr($0,1,1)), substr($0,2)}'

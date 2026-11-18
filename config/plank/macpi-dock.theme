@@ -1,0 +1,36 @@
+# MacPi dock theme for plank
+# Frosted, rounded, macOS-style dock shelf. Needs a compositor (xfwm4) for blur-free alpha.
+
+[PlankTheme]
+TopRoundness=14
+BottomRoundness=14
+LineWidth=1
+OuterStrokeColor=255;;255;;255;;34
+FillStartColor=236;;240;;248;;44
+FillEndColor=210;;218;;232;;26
+InnerStrokeColor=255;;255;;255;;22
+
+[PlankDockTheme]
+HorizPadding=6
+TopPadding=-6
+BottomPadding=-6
+ItemPadding=6
+IndicatorSize=4.5
+IconShadowSize=2
+UrgentBounceHeight=1.6
+LaunchBounceHeight=0.7
+FadeOpacity=1
+ClickTime=180
+UrgentBounceTime=700
+LaunchBounceTime=600
+ActiveTime=180
+SlideTime=220
+FadeTime=200
+HideTime=220
+GlowSize=30
+GlowTime=9000
+GlowPulseTime=2000
+UrgentHueShift=150
+ItemMoveTime=320
+CascadeHide=true
+BadgeColor=255;;59;;48;;255

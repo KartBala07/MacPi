@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# macpi-wallpaper — live (video) or static wallpapers on the X root window.
+#
+#   macpi-wallpaper start|stop|restart|status
+#   macpi-wallpaper list
+#   macpi-wallpaper set aurora-lake|sunrise-clouds
+#   macpi-wallpaper mode live|static
+#   macpi-wallpaper static /path/to/image.jpg
+#
+set -u
+
+SHARE=${MACPI_SHARE:-/usr/local/share/macpi}
+CLIPS="$SHARE/livewall"
+CONF_DIR="$HOME/.config/macpi"
+CONF="$CONF_DIR/wallpaper.conf"
+PIDFILE="$CONF_DIR/livewall.pid"
+LOG="$CONF_DIR/livewall.log"
+POSTER="$SHARE/wallpapers/macpi-sonoma.jpg"
+
+mkdir -p "$CONF_DIR"
+MODE=live
+CLIP=aurora-lake
+STATIC_IMG=""
+# shellcheck disable=SC1090
+[[ -f "$CONF" ]] && . "$CONF"
+
+save() {
+  {
+    echo "MODE=$MODE"
+    echo "CLIP=$CLIP"
+    echo "STATIC_IMG=$STATIC_IMG"
+  } > "$CONF"
+}
+
+msg() { printf '%s\n' "$*"; }
+
+clips() {
+  [[ -d "$CLIPS" ]] || return 0
+  for f in "$CLIPS"/*.mp4; do
+    [[ -e "$f" ]] || continue
+    basename "$f" .mp4
+  done
+}
+
+stop_live() {
+  if [[ -f "$PIDFILE" ]]; then
+    kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+  fi
+  pkill -f 'xwinwrap.*macpi' 2>/dev/null
+  pkill -f 'mpv.*livewall' 2>/dev/null
+  return 0
+}
+
+apply_static() {
+  local img="${1:-$STATIC_IMG}"
+  [[ -n "$img" && -f "$img" ]] || img="$POSTER"
+  if command -v feh >/dev/null; then
+    feh --no-fehbg --bg-fill "$img" >/dev/null 2>&1 && return 0
+  fi
+  if command -v xsetroot >/dev/null; then
+    xsetroot -solid '#101218'
+  fi
+}
+
+start_live() {
+  local clip="$CLIPS/$CLIP.mp4"
+  local poster="$CLIPS/$CLIP-poster.jpg"
+
+  if [[ ! -f "$clip" ]]; then
+    msg "no such clip: $CLIP (try: macpi-wallpaper list)"
+    return 1
+  fi
+  if ! command -v xwinwrap >/dev/null || ! command -v mpv >/dev/null; then
+    msg "xwinwrap or mpv missing — falling back to a still frame"
+    apply_static "${poster:-$POSTER}"
+    return 0
+  fi
+  if ! command -v xdpyinfo >/dev/null; then
+    msg "xdpyinfo missing (x11-xserver-utils) — cannot size the wallpaper"
+    return 1
+  fi
+
+  local geom
+  geom=$(xdpyinfo | awk '/dimensions:/{print $2; exit}')
+  [[ -n "$geom" ]] || { msg "could not read the display size"; return 1; }
+
+  apply_static "${poster:-$POSTER}"   # shown until the first video frame
+
+  # Very light boards: keep the decoder comfortable.
+  local extra=()
+  local model=""
+  [[ -r /proc/device-tree/model ]] && model=$(tr -d '\0' < /proc/device-tree/model)
+  case "$model" in
+    *"Raspberry Pi 3"*|*"Zero 2"*) extra=(--scale=0 --video-sync=audio --framedrop=vo) ;;
+  esac
+
+  setsid xwinwrap -g "$geom" -ni -s -nf -b -un -argb -fdt -o 1 -- \
+    mpv -wid WID --really-quiet --no-audio --no-osc --no-osd-bar \
+        --no-input-default-bindings --no-input-cursor \
+        --loop-file=inf --hwdec=auto-safe --vo=gpu --panscan=1.0 \
+        "${extra[@]}" "$clip" \
+    >"$LOG" 2>&1 &
+
+  echo $! > "$PIDFILE"
+  sleep 1
+  if kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    msg "live wallpaper: $CLIP ($geom)"
+  else
+    msg "video failed to start — see $LOG"
+    apply_static "${poster:-$POSTER}"
+    return 1
+  fi
+}
+
+case "${1:-start}" in
+  start)
+    stop_live
+    if [[ "$MODE" == "live" ]]; then start_live; else apply_static; fi
+    ;;
+  stop)    stop_live; msg "live wallpaper stopped" ;;
+  restart) "$0" stop; "$0" start ;;
+  status)
+    if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+      msg "running: mode=$MODE clip=$CLIP pid=$(cat "$PIDFILE")"
+    else
+      msg "not running: mode=$MODE clip=$CLIP"
+    fi
+    ;;
+  list)    clips ;;
+  set)
+    name="${2:-}"
+    [[ -n "$name" ]] || { msg "usage: macpi-wallpaper set <$(clips | tr '\n' '|' )>"; exit 2; }
+    [[ -f "$CLIPS/$name.mp4" ]] || { msg "unknown clip: $name"; exit 2; }
+    CLIP="$name"; MODE=live; save; msg "clip=$CLIP"; "$0" restart
+    ;;
+  mode)
+    case "${2:-}" in
+      live)   MODE=live; save; "$0" restart ;;
+      static) MODE=static; save; stop_live; apply_static; msg "static wallpaper" ;;
+      *) msg "usage: macpi-wallpaper mode live|static"; exit 2 ;;
+    esac
+    ;;
+  static)
+    STATIC_IMG="${2:-$STATIC_IMG}"
+    MODE=static; save; stop_live; apply_static "$STATIC_IMG"
+    msg "static: ${STATIC_IMG:-$POSTER}"
+    ;;
+  *) sed -n '2,12p' "$0"; exit 2 ;;
+esac

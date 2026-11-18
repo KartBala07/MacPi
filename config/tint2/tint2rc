@@ -1,0 +1,136 @@
+# MacPi menubar — tint2 config
+# Top bar, macOS-style: [apple menu] [active app] | ... | [tray] [clock]
+# Toggle the taskbar strip by adding T to panel_items below.
+
+#---------------------------------------------
+# BACKGROUND AND BORDER
+rounded = 0
+border_width = 1
+border_sides = B
+border_color = #ffffff 16
+background_color = #0c0e13 78
+background_shadow = 0
+
+#---------------------------------------------
+# PANEL
+panel_position = top center horizontal
+panel_items = LEFSC
+panel_size = 100% 26
+panel_monitor = all
+panel_shrink = 0
+panel_padding = 12 0 12
+panel_background_id = 1
+panel_layer = top
+panel_pinned = 1
+panel_dock = 0
+panel_window_name = MacPi Menubar
+autohide = 0
+strut_policy = follow_size
+mouse_effects = 1
+font_shadow = 0
+disable_transparency = 0
+wm_menu = 0
+
+#---------------------------------------------
+# TASKBAR  (only visible if you add T to panel_items)
+taskbar_mode = single_desktop
+taskbar_hide_if_empty = 0
+taskbar_distribute_size = 1
+taskbar_padding = 4 0 4
+taskbar_background_id = 0
+taskbar_name = 0
+taskbar_name_font = Inter Medium 10
+taskbar_name_font_color = #d8dde6 90
+taskbar_name_active_font_color = #ffffff 100
+taskbar_name_padding = 4 0
+taskbar_name_background_id = 0
+taskbar_name_active_background_id = 0
+
+#---------------------------------------------
+# TASK
+task_icon = 1
+task_text = 0
+task_centered = 1
+task_width = 140
+task_maximum_size = 150 26
+task_padding = 8 2
+task_font = Inter Medium 10
+task_font_color = #c9cfda 88
+task_icon_asb = 100 0 0
+task_background_id = 0
+task_active_background_id = 2
+task_active_font_color = #ffffff 100
+task_iconified_font_color = #9aa3b2 70
+task_iconified_background_id = 0
+task_urgent_background_id = 3
+mouse_left = toggle_iconify
+mouse_middle = close
+mouse_right = close
+mouse_scroll_up = toggle
+mouse_scroll_down = iconify
+
+#---------------------------------------------
+# SYSTEM TRAY
+systray_padding = 6 2 6
+systray_background_id = 0
+systray_sort = ascending
+systray_icon_size = 16
+systray_icon_asb = 100 0 0
+systray_monitor = primary
+
+#---------------------------------------------
+# LAUNCHER  (the apple button)
+launcher_padding = 2 0 10
+launcher_background_id = 0
+launcher_icon_background_id = 0
+launcher_icon_size = 17
+launcher_icon_asb = 100 0 0
+launcher_icon_theme_override = 0
+startup_notifications = 0
+launcher_tooltip = 0
+launcher_item_app = /usr/share/applications/macpi-menu.desktop
+
+#---------------------------------------------
+# EXECUTOR  (active application name)
+execp = new
+execp_command = /usr/local/bin/macpi-active-app
+execp_interval = 1
+execp_has_icon = 0
+execp_cache_icon = 1
+execp_continuous = 0
+execp_markup = 0
+execp_tooltip = 0
+execp_font = Inter SemiBold 10
+execp_font_color = #ffffff 96
+execp_padding = 4 0 12
+execp_background_id = 0
+
+#---------------------------------------------
+# CLOCK
+time1_format = %a %b %e  %l:%M %p
+time1_font = Inter Medium 10
+time2_format =
+time2_font = Inter 8
+clock_font_color = #ffffff 96
+clock_padding = 10 0 10
+clock_background_id = 0
+clock_tooltip =
+clock_tooltip_format =
+clock_tooltip_format_2 =
+time1_timezone =
+time2_timezone =
+time1_lclick_command =
+time2_lclick_command =
+time1_rclick_command = xfce4-settings-manager
+time2_rclick_command =
+
+#---------------------------------------------
+# BACKGROUNDS
+background1 = #0c0e13 78
+background2 = #ffffff 12
+background3 = #ff5f57 60
+
+#---------------------------------------------
+# SEPARATOR (round pill look between groups)
+separator = new
+separator_style = empty
